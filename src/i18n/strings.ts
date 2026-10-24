@@ -19,6 +19,7 @@ export const strings: Record<Language, Record<string, string>> = {
     typing: 'typing...',
     noChatSelected: 'Select a chat to start messaging',
     comingSoon: 'Coming in a later phase',
+    addReaction: 'React',
   },
   km: {
     appName: 'ChatX Web',
@@ -38,6 +39,7 @@ export const strings: Record<Language, Record<string, string>> = {
     typing: 'កំពុងវាយ...',
     noChatSelected: 'ជ្រើសរើសជជែកដើម្បីចាប់ផ្តើមសារ',
     comingSoon: 'នឹងមានក្នុងដំណាក់កាលបន្ទាប់',
+    addReaction: 'បញ្ចេញប្រតិកម្ម',
   },
 };
 

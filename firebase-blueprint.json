@@ -208,6 +208,10 @@
         "deleted": {
           "type": "boolean",
           "description": "Terminal soft-delete state."
+        },
+        "reactions": {
+          "type": "object",
+          "description": "Map of allowed emoji strings to bounded arrays of user UIDs who reacted."
         }
       },
       "required": ["chatId", "senderId", "memberIds", "type", "text", "mediaUrl", "mediaName", "mediaSize", "voiceDurationSec", "createdAt", "updatedAt", "readBy", "deleted"]

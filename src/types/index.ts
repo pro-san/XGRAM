@@ -5,6 +5,21 @@ export type MessageType = 'text' | 'image' | 'file' | 'voice';
 export type Language = 'en' | 'km';
 export type ThemeMode = 'light' | 'dark';
 
+export const ALLOWED_REACTION_EMOJIS = [
+  '👍',
+  '❤️',
+  '😂',
+  '😮',
+  '😢',
+  '🙏',
+  '🔥',
+  '🎉',
+] as const;
+
+export type ReactionEmoji = (typeof ALLOWED_REACTION_EMOJIS)[number];
+
+export type MessageReactions = Partial<Record<ReactionEmoji, string[]>>;
+
 export interface AppUser {
   uid: string;
   displayName: string;
@@ -52,6 +67,7 @@ export interface Message {
   createdAt: Timestamp | null;
   updatedAt?: Timestamp | null;
   readBy: string[];
+  reactions?: MessageReactions;
   editedAt?: Timestamp | null;
   deleted: boolean;
 }

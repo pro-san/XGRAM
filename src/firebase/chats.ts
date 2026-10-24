@@ -14,7 +14,15 @@ import {
 } from 'firebase/firestore';
 import { auth, db } from './config';
 import { handleFirestoreError, OperationType } from './errors';
-import type { Chat, ChatType, Message, MessageType } from '../types';
+import {
+  ALLOWED_REACTION_EMOJIS,
+  type Chat,
+  type ChatType,
+  type Message,
+  type MessageReactions,
+  type MessageType,
+  type ReactionEmoji,
+} from '../types';
 
 export function subscribeToUserChats(
   uid: string,
@@ -150,6 +158,7 @@ export async function sendMessage(opts: {
       createdAt: serverTimestamp(),
       updatedAt: serverTimestamp(),
       readBy: [opts.senderId],
+      reactions: {},
       deleted: false,
     });
   } catch (error) {
@@ -170,6 +179,65 @@ export async function sendMessage(opts: {
     });
   } catch (error) {
     handleFirestoreError(error, OperationType.UPDATE, chatPath);
+  }
+}
+
+export async function toggleMessageReaction(opts: {
+  chatId: string;
+  messageId: string;
+  uid: string;
+  emoji: ReactionEmoji;
+}) {
+  if (!ALLOWED_REACTION_EMOJIS.includes(opts.emoji)) {
+    return;
+  }
+  const path = `chats/${opts.chatId}/messages/${opts.messageId}`;
+  const ref = doc(db, 'chats', opts.chatId, 'messages', opts.messageId);
+  let currentReactions: MessageReactions = {};
+  try {
+    const snap = await getDoc(ref);
+    if (!snap.exists()) return;
+    const data = snap.data();
+    if (data.reactions && typeof data.reactions === 'object') {
+      currentReactions = { ...data.reactions };
+    }
+  } catch (error) {
+    handleFirestoreError(error, OperationType.GET, path);
+  }
+
+  const sanitizedReactions: MessageReactions = {};
+  for (const key of ALLOWED_REACTION_EMOJIS) {
+    const list = currentReactions[key];
+    if (Array.isArray(list)) {
+      const validUids = list
+        .filter((u): u is string => typeof u === 'string' && u.length >= 1 && u.length <= 128)
+        .slice(0, 50);
+      if (validUids.length > 0) {
+        sanitizedReactions[key] = validUids;
+      }
+    }
+  }
+
+  const existingForEmoji = sanitizedReactions[opts.emoji] ?? [];
+  const hasReacted = existingForEmoji.includes(opts.uid);
+  if (hasReacted) {
+    const updatedList = existingForEmoji.filter((id) => id !== opts.uid);
+    if (updatedList.length > 0) {
+      sanitizedReactions[opts.emoji] = updatedList;
+    } else {
+      delete sanitizedReactions[opts.emoji];
+    }
+  } else {
+    sanitizedReactions[opts.emoji] = [...existingForEmoji, opts.uid].slice(0, 50);
+  }
+
+  try {
+    await updateDoc(ref, {
+      reactions: sanitizedReactions,
+      updatedAt: serverTimestamp(),
+    });
+  } catch (error) {
+    handleFirestoreError(error, OperationType.UPDATE, path);
   }
 }
 

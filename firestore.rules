@@ -83,9 +83,28 @@ service cloud.firestore {
         (!('lastMessage' in data) || isValidLastMessageMap(data.lastMessage));
     }
 
+    function isValidReactionUidList(listVal) {
+      return listVal is list &&
+        listVal.size() <= 50 &&
+        (listVal.size() == 0 || (listVal[0] is string && listVal[0].size() >= 1 && listVal[0].size() <= 128));
+    }
+
+    function isValidReactionsMap(reactions) {
+      return reactions is map &&
+        reactions.keys().hasOnly(['👍', '❤️', '😂', '😮', '😢', '🙏', '🔥', '🎉']) &&
+        (!('👍' in reactions) || isValidReactionUidList(reactions['👍'])) &&
+        (!('❤️' in reactions) || isValidReactionUidList(reactions['❤️'])) &&
+        (!('😂' in reactions) || isValidReactionUidList(reactions['😂'])) &&
+        (!('😮' in reactions) || isValidReactionUidList(reactions['😮'])) &&
+        (!('😢' in reactions) || isValidReactionUidList(reactions['😢'])) &&
+        (!('🙏' in reactions) || isValidReactionUidList(reactions['🙏'])) &&
+        (!('🔥' in reactions) || isValidReactionUidList(reactions['🔥'])) &&
+        (!('🎉' in reactions) || isValidReactionUidList(reactions['🎉']));
+    }
+
     function isValidMessage(data, chatId) {
       return data.keys().hasAll(['chatId', 'senderId', 'memberIds', 'type', 'text', 'mediaUrl', 'mediaName', 'mediaSize', 'voiceDurationSec', 'createdAt', 'updatedAt', 'readBy', 'deleted']) &&
-        data.keys().hasOnly(['chatId', 'senderId', 'memberIds', 'type', 'text', 'mediaUrl', 'mediaName', 'mediaSize', 'voiceDurationSec', 'createdAt', 'updatedAt', 'readBy', 'deleted']) &&
+        data.keys().hasOnly(['chatId', 'senderId', 'memberIds', 'type', 'text', 'mediaUrl', 'mediaName', 'mediaSize', 'voiceDurationSec', 'createdAt', 'updatedAt', 'readBy', 'deleted', 'reactions']) &&
         data.chatId is string && data.chatId.size() >= 1 && data.chatId.size() <= 128 && data.chatId.matches('^[a-zA-Z0-9_\\-]+$') &&
         data.chatId == chatId &&
         data.senderId is string && data.senderId.size() >= 1 && data.senderId.size() <= 128 && data.senderId.matches('^[a-zA-Z0-9_\\-]+$') &&
@@ -101,7 +120,8 @@ service cloud.firestore {
         data.updatedAt is timestamp &&
         data.readBy is list && data.readBy.size() >= 1 && data.readBy.size() <= 50 &&
         data.readBy[0] is string && data.readBy[0].size() <= 128 &&
-        data.deleted is bool;
+        data.deleted is bool &&
+        (!('reactions' in data) || isValidReactionsMap(data.reactions));
     }
 
     function isValidTyping(data, chatId, typingUid) {
@@ -271,7 +291,13 @@ service cloud.firestore {
               request.auth.uid in incoming().readBy &&
               incoming().deleted == false
             ) ||
-            // Action 2: Sender soft-deletes message (Terminal State Transition)
+            // Action 2: Member toggles an emoji reaction on a message
+            (
+              incoming().diff(existing()).affectedKeys().hasOnly(['reactions', 'updatedAt']) &&
+              'reactions' in incoming() &&
+              incoming().deleted == false
+            ) ||
+            // Action 3: Sender soft-deletes message (Terminal State Transition)
             (
               existing().senderId == request.auth.uid &&
               incoming().diff(existing()).affectedKeys().hasOnly(['deleted', 'text', 'mediaUrl', 'updatedAt']) &&
