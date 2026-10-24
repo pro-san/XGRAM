@@ -23,6 +23,12 @@
           "maxLength": 60,
           "description": "Unique handle searchable by prefix."
         },
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "description": "Searchable email address for starting direct messages."
+        },
         "photoURL": {
           "type": "string",
           "maxLength": 1000,

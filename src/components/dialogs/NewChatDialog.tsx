@@ -15,19 +15,23 @@ import {
   Stack,
   Typography,
 } from '@mui/material';
-import { searchUsersByUsername } from '../../firebase/users';
+import { searchUsers } from '../../firebase/users';
 import { createChat } from '../../firebase/chats';
 import { useAuthStore } from '../../store/authStore';
-import type { AppUser } from '../../types';
+import { useUIStore } from '../../store/uiStore';
+import { t } from '../../i18n/strings';
+import type { AppUser, Chat } from '../../types';
 
 interface Props {
   mode: 'direct' | 'group' | 'channel';
+  existingChats?: Chat[];
   onClose: () => void;
   onCreated: (chatId: string) => void;
 }
 
-export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
+export default function NewChatDialog({ mode, existingChats = [], onClose, onCreated }: Props) {
   const profile = useAuthStore((s) => s.profile);
+  const language = useUIStore((s) => s.language);
   const [search, setSearch] = useState('');
   const [results, setResults] = useState<AppUser[]>([]);
   const [selected, setSelected] = useState<AppUser[]>([]);
@@ -39,7 +43,7 @@ export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
 
   async function handleSearch(value: string) {
     setSearch(value);
-    const users = await searchUsersByUsername(value);
+    const users = await searchUsers(value);
     setResults(users.filter((u) => u.uid !== profile?.uid));
   }
 
@@ -58,13 +62,29 @@ export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
   async function handleCreate() {
     if (!profile) return;
     if (mode === 'direct' && selected[0]) {
+      const targetUser = selected[0];
+      const existing = existingChats.find(
+        (c) =>
+          c.type === 'private' &&
+          c.memberIds.includes(profile.uid) &&
+          c.memberIds.includes(targetUser.uid) &&
+          c.memberIds.length === 2,
+      );
+      if (existing) {
+        onCreated(existing.id);
+        return;
+      }
+
       const chatId = await createChat({
         type: 'private',
-        name: selected[0].displayName,
-        memberIds: [profile.uid, selected[0].uid],
+        name: targetUser.displayName,
+        photoURL: targetUser.photoURL,
+        memberIds: [profile.uid, targetUser.uid],
         createdBy: profile.uid,
       });
-      onCreated(chatId);
+      if (chatId) {
+        onCreated(chatId);
+      }
       return;
     }
     if ((mode === 'group' || mode === 'channel') && name.trim()) {
@@ -75,12 +95,18 @@ export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
         createdBy: profile.uid,
         isBroadcastOnly: mode === 'channel',
       });
-      onCreated(chatId);
+      if (chatId) {
+        onCreated(chatId);
+      }
     }
   }
 
   const title =
-    mode === 'direct' ? 'New Direct Message' : mode === 'group' ? 'New Group' : 'New Channel';
+    mode === 'direct'
+      ? t(language, 'newDirectMessage')
+      : mode === 'group'
+        ? t(language, 'newGroup')
+        : t(language, 'newChannel');
 
   return (
     <Dialog open onClose={onClose} fullWidth maxWidth="xs">
@@ -97,10 +123,11 @@ export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
             />
           )}
           <TextField
-            label="Search by username"
+            label={t(language, 'searchUsersLabel')}
             value={search}
             onChange={(e) => handleSearch(e.target.value)}
             fullWidth
+            autoFocus={mode === 'direct'}
           />
           {selected.length > 0 && (
             <Stack direction="row" spacing={1} sx={{ flexWrap: 'wrap' }}>
@@ -117,21 +144,24 @@ export default function NewChatDialog({ mode, onClose, onCreated }: Props) {
           <List dense sx={{ maxHeight: 220, overflowY: 'auto' }}>
             {results.length === 0 ? (
               <Typography variant="caption" color="text.secondary" sx={{ px: 1 }}>
-                No other registered users found yet.
+                {t(language, 'noUsersFound')}
               </Typography>
             ) : (
-              results.map((u) => (
-                <ListItemButton
-                  key={u.uid}
-                  onClick={() => toggleSelect(u)}
-                  selected={!!selected.find((s) => s.uid === u.uid)}
-                >
-                  <ListItemAvatar>
-                    <Avatar src={u.photoURL}>{u.displayName[0]}</Avatar>
-                  </ListItemAvatar>
-                  <ListItemText primary={u.displayName} secondary={`@${u.username}`} />
-                </ListItemButton>
-              ))
+              results.map((u) => {
+                const secondary = u.email ? `@${u.username} • ${u.email}` : `@${u.username}`;
+                return (
+                  <ListItemButton
+                    key={u.uid}
+                    onClick={() => toggleSelect(u)}
+                    selected={!!selected.find((s) => s.uid === u.uid)}
+                  >
+                    <ListItemAvatar>
+                      <Avatar src={u.photoURL}>{u.displayName[0]}</Avatar>
+                    </ListItemAvatar>
+                    <ListItemText primary={u.displayName} secondary={secondary} />
+                  </ListItemButton>
+                );
+              })
             )}
           </List>
         </Stack>

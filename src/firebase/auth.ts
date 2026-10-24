@@ -45,12 +45,15 @@ export async function ensureUserDoc(user: User, extra?: Partial<AppUser>) {
   );
   const photoURL = (extra?.photoURL ?? user.photoURL ?? '').slice(0, 1000);
 
+  const email = (user.email || '').trim().toLowerCase().slice(0, 254);
+
   if (!exists) {
     try {
       await setDoc(ref, {
         uid: user.uid,
         displayName,
         username,
+        email,
         photoURL,
         status: 'online',
         language: extra?.language === 'km' ? 'km' : 'en',
@@ -65,7 +68,7 @@ export async function ensureUserDoc(user: User, extra?: Partial<AppUser>) {
     try {
       await setDoc(doc(db, 'users', user.uid, 'private', 'info'), {
         uid: user.uid,
-        email: (user.email || '').slice(0, 254),
+        email,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
       });
@@ -75,6 +78,7 @@ export async function ensureUserDoc(user: User, extra?: Partial<AppUser>) {
   } else {
     try {
       await updateDoc(ref, {
+        email,
         status: 'online',
         lastSeen: serverTimestamp(),
       });
