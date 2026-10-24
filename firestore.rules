@@ -133,6 +133,12 @@ service cloud.firestore {
         );
     }
 
+    // Connectivity Probe Document (Read-Only)
+    match /test/{docId} {
+      allow get: if isValidId(docId) && docId == 'connection';
+      allow list, write: if false;
+    }
+
     // Public User Profiles (Non-PII)
     match /users/{userId} {
       allow get: if isSignedIn() && isValidId(userId);

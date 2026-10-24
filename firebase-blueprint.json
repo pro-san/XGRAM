@@ -244,9 +244,24 @@
         }
       },
       "required": ["uid", "chatId", "memberIds", "isTyping", "updatedAt"]
+    },
+    "ConnectionTest": {
+      "title": "ConnectionTest",
+      "description": "Read-only document path used on application boot to verify Firestore connectivity.",
+      "type": "object",
+      "properties": {
+        "ok": {
+          "type": "boolean",
+          "description": "Optional health indicator."
+        }
+      }
     }
   },
   "firestore": {
+    "/test/{docId}": {
+      "schema": { "$ref": "#/entities/ConnectionTest" },
+      "description": "Read-only connectivity probe document."
+    },
     "/users/{userId}": {
       "schema": { "$ref": "#/entities/UserPublicProfile" },
       "description": "Public user directory profiles (non-PII)."
