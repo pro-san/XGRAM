@@ -1,0 +1,271 @@
+{
+  "entities": {
+    "UserPublicProfile": {
+      "title": "UserPublicProfile",
+      "description": "Publicly searchable user profile document containing non-PII attributes for chat discovery.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "The Firebase Auth UID of the user."
+        },
+        "displayName": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 100,
+          "description": "Display name shown in chat headers and lists."
+        },
+        "username": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 60,
+          "description": "Unique handle searchable by prefix."
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional avatar URL."
+        },
+        "bio": {
+          "type": "string",
+          "maxLength": 300,
+          "description": "Optional short biography."
+        },
+        "status": {
+          "type": "string",
+          "enum": ["online", "offline"],
+          "description": "Online presence indicator."
+        },
+        "language": {
+          "type": "string",
+          "enum": ["en", "km"],
+          "description": "Preferred UI language."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "lastSeen": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last activity."
+        }
+      },
+      "required": ["uid", "displayName", "username", "photoURL", "status", "language", "createdAt", "lastSeen"]
+    },
+    "UserPrivateInfo": {
+      "title": "UserPrivateInfo",
+      "description": "Isolated PII record for a user, accessible strictly by the owner.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "The Firebase Auth UID of the user."
+        },
+        "email": {
+          "type": "string",
+          "maxLength": 254,
+          "format": "email",
+          "description": "User email address (PII)."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of creation."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        }
+      },
+      "required": ["uid", "email", "createdAt", "updatedAt"]
+    },
+    "Chat": {
+      "title": "Chat",
+      "description": "A direct message, group chat, or broadcast channel.",
+      "type": "object",
+      "properties": {
+        "type": {
+          "type": "string",
+          "enum": ["private", "group", "channel"],
+          "description": "Chat room type."
+        },
+        "name": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 120,
+          "description": "Display title of the chat."
+        },
+        "photoURL": {
+          "type": "string",
+          "maxLength": 1000,
+          "description": "Optional avatar URL for the chat."
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "Bounded list of member UIDs (up to 50)."
+        },
+        "adminIds": {
+          "type": "array",
+          "description": "Bounded list of admin UIDs (up to 20)."
+        },
+        "createdBy": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the user who created the chat."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the chat was created."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when the chat was last updated."
+        },
+        "isBroadcastOnly": {
+          "type": "boolean",
+          "description": "True if only admins can post messages."
+        },
+        "lastMessage": {
+          "type": "object",
+          "description": "Summary of the most recent message."
+        }
+      },
+      "required": ["type", "name", "photoURL", "memberIds", "adminIds", "createdBy", "createdAt", "updatedAt", "isBroadcastOnly"]
+    },
+    "Message": {
+      "title": "Message",
+      "description": "A single message inside a chat.",
+      "type": "object",
+      "properties": {
+        "chatId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent chat ID."
+        },
+        "senderId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Author UID."
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "Snapshot of chat member UIDs for secure list query enforcement."
+        },
+        "type": {
+          "type": "string",
+          "enum": ["text", "image", "file", "voice"],
+          "description": "Kind of message payload."
+        },
+        "text": {
+          "type": "string",
+          "maxLength": 2000,
+          "description": "Text body."
+        },
+        "mediaUrl": {
+          "type": "string",
+          "maxLength": 1500,
+          "description": "URL or data URL of attached media."
+        },
+        "mediaName": {
+          "type": "string",
+          "maxLength": 255,
+          "description": "Filename of attachment."
+        },
+        "mediaSize": {
+          "type": "integer",
+          "description": "File size in bytes."
+        },
+        "voiceDurationSec": {
+          "type": "integer",
+          "description": "Duration of voice note in seconds."
+        },
+        "createdAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp when sent."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of last update."
+        },
+        "readBy": {
+          "type": "array",
+          "description": "Bounded list of UIDs who have read this message."
+        },
+        "deleted": {
+          "type": "boolean",
+          "description": "Terminal soft-delete state."
+        }
+      },
+      "required": ["chatId", "senderId", "memberIds", "type", "text", "mediaUrl", "mediaName", "mediaSize", "voiceDurationSec", "createdAt", "updatedAt", "readBy", "deleted"]
+    },
+    "TypingState": {
+      "title": "TypingState",
+      "description": "Ephemeral typing indicator per user in a chat.",
+      "type": "object",
+      "properties": {
+        "uid": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "UID of the typing user."
+        },
+        "chatId": {
+          "type": "string",
+          "maxLength": 128,
+          "pattern": "^[a-zA-Z0-9_\\-]+$",
+          "description": "Parent chat ID."
+        },
+        "memberIds": {
+          "type": "array",
+          "description": "Snapshot of chat member UIDs for secure list query enforcement."
+        },
+        "isTyping": {
+          "type": "boolean",
+          "description": "Whether the user is currently typing."
+        },
+        "updatedAt": {
+          "type": "string",
+          "format": "date-time",
+          "description": "Server timestamp of typing state change."
+        }
+      },
+      "required": ["uid", "chatId", "memberIds", "isTyping", "updatedAt"]
+    }
+  },
+  "firestore": {
+    "/users/{userId}": {
+      "schema": { "$ref": "#/entities/UserPublicProfile" },
+      "description": "Public user directory profiles (non-PII)."
+    },
+    "/users/{userId}/private/{docId}": {
+      "schema": { "$ref": "#/entities/UserPrivateInfo" },
+      "description": "Isolated private PII data (email) accessible only by the owner."
+    },
+    "/chats/{chatId}": {
+      "schema": { "$ref": "#/entities/Chat" },
+      "description": "Chat conversations (direct, group, or broadcast channel)."
+    },
+    "/chats/{chatId}/messages/{messageId}": {
+      "schema": { "$ref": "#/entities/Message" },
+      "description": "Messages belonging to a specific chat."
+    },
+    "/chats/{chatId}/typing/{typingUid}": {
+      "schema": { "$ref": "#/entities/TypingState" },
+      "description": "Typing indicators for members of a chat."
+    }
+  }
+}

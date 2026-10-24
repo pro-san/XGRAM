@@ -1,0 +1,6 @@
+{
+  "name": "ChatX Web",
+  "description": "A Telegram-style real-time messaging web application built with React, Material UI, and Firebase supporting direct messages, groups, broadcast channels, media attachments, and voice notes.",
+  "requestFramePermissions": ["microphone"],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
